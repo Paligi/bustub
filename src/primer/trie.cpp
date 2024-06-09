@@ -1,26 +1,123 @@
 #include "primer/trie.h"
 #include <string_view>
 #include "common/exception.h"
+#include <stack>
+#include <typeinfo>
+#include <iostream>
 
 namespace bustub {
 
 template <class T>
 auto Trie::Get(std::string_view key) const -> const T * {
-  throw NotImplementedException("Trie::Get is not implemented.");
+  // throw NotImplementedException("Trie::Get is not implemented.");
 
   // You should walk through the trie to find the node corresponding to the key. If the node doesn't exist, return
   // nullptr. After you find the node, you should use `dynamic_cast` to cast it to `const TrieNodeWithValue<T> *`. If
   // dynamic_cast returns `nullptr`, it means the type of the value is mismatched, and you should return nullptr.
   // Otherwise, return the value.
+  if (root_ == nullptr) {
+    return nullptr;
+  }
+  auto new_node = &root_;
+  for (char keys : key) {
+    auto find_ = (*new_node)->children_.find(keys);
+    if (find_ != (*new_node)->children_.end()){
+      new_node = &((*new_node)->children_.at(keys));
+    }else{
+      return nullptr;
+    }
+
+  }
+  if((*new_node)->is_value_node_){
+    if(dynamic_cast<const TrieNodeWithValue<T> *>((*new_node).get()) == nullptr){
+      return nullptr;
+    }
+    return dynamic_cast<const TrieNodeWithValue<T> *>((*new_node).get())->value_.get();
+  } 
+  return nullptr;
+
 }
 
 template <class T>
 auto Trie::Put(std::string_view key, T value) const -> Trie {
   // Note that `T` might be a non-copyable type. Always use `std::move` when creating `shared_ptr` on that value.
-  throw NotImplementedException("Trie::Put is not implemented.");
+  // throw NotImplementedException("Trie::Put is not implemented.");
 
   // You should walk through the trie and create new nodes if necessary. If the node corresponding to the key already
   // exists, you should create a new `TrieNodeWithValue`.
+  
+  // Clone the new root
+  // std::cout<<"Hello"<<std::endl;
+  auto new_root = std::make_unique<TrieNode>(TrieNode(std::map<char, std::shared_ptr<const TrieNode>>()));
+  if (root_ != nullptr){
+    new_root = root_->Clone();
+  }
+  // new_root = root_->Clone();
+
+  auto root_with_value = std::make_shared<T>(std::move(value));
+  if (key.empty()){
+    auto temp = std::make_unique<TrieNodeWithValue<T>>(TrieNodeWithValue(new_root->children_, std::move(root_with_value)));
+    return Trie(std::move(temp));
+  }
+
+  std::unique_ptr<TrieNode> slot = nullptr;
+  // 建立一个栈存字符和指针
+  std::stack<std::pair<char, std::unique_ptr<TrieNode>>> key_stack;
+  
+
+  auto parent = &new_root;
+  auto it_key = key.begin();
+  
+  // 便利到倒数第二个位置
+  for (; it_key +1 != key.end(); it_key++ ){
+    auto it_find = ((*parent) -> children_).find(*it_key);
+  // 如果找到的话克隆后加入栈中
+    if (it_find != ((*parent)->children_).end()){
+      slot = ((*parent)->children_).at(*it_key)->Clone();
+      key_stack.push(std::make_pair(*it_key, std::move(slot)));
+      parent = &key_stack.top().second;  // 裸指针很危险，如果还是parent=&slot，会出问题
+    }else{
+      break;
+    }
+  }
+  // 栈存的是能够便利到的key的node
+
+  // 加上不能便利到的key的node
+  while(it_key +1 != key.end()){
+    auto tep = std::make_unique<TrieNode>(TrieNode(std::map<char, std::shared_ptr<const TrieNode>>()));
+    key_stack.push(std::make_pair(*it_key, std::move(tep)));
+    it_key++;
+  }
+
+  slot = std::make_unique<TrieNodeWithValue<T>>(TrieNodeWithValue(std::map<char, std::shared_ptr<const TrieNode>>(), std::move(root_with_value)));
+  char key_slot = *it_key;
+  while( !key_stack.empty()){
+    auto if_find = key_stack.top().second->children_.find(key_slot);
+    if (if_find != key_stack.top().second->children_.end()){
+      if(it_key + 1 == key.end() ){
+        slot -> children_ = key_stack.top().second->children_.at(key_slot)->children_;
+        --it_key;
+      }
+      key_stack.top().second->children_.at(key_slot) = std::move(slot);
+    } else{
+      it_key = key.begin();
+      key_stack.top().second->children_.insert(std::make_pair(key_slot, std::move(slot)));
+    }
+
+    key_slot = key_stack.top().first;
+    slot = std::move(key_stack.top().second);
+    key_stack.pop();
+  }
+
+  auto it_find = new_root->children_.find(key_slot);
+  if (it_find != new_root->children_.end()) {
+    new_root->children_.at(key_slot) = std::move(slot);
+  } else {
+    new_root->children_.insert(std::make_pair(key_slot, std::move(slot)));
+  }
+
+  return Trie(std::shared_ptr<const TrieNode>(std::move(new_root)));
+
 }
 
 auto Trie::Remove(std::string_view key) const -> Trie {
