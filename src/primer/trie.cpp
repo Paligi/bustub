@@ -52,7 +52,6 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
   if (root_ != nullptr){
     new_root = root_->Clone();
   }
-  // new_root = root_->Clone();
 
   auto root_with_value = std::make_shared<T>(std::move(value));
   if (key.empty()){
@@ -120,12 +119,77 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
 
 }
 
-auto Trie::Remove(std::string_view key) const -> Trie {
-  throw NotImplementedException("Trie::Remove is not implemented.");
 
+auto Trie::Remove(std::string_view key) const -> Trie {
+  // throw NotImplementedException("Trie::Remove is not implemented.");
   // You should walk through the trie and remove nodes if necessary. If the node doesn't contain a value any more,
   // you should convert it to `TrieNode`. If a node doesn't have children any more, you should remove it.
+  if (key.empty()){
+    return Trie(nullptr);
+  }
+  
+  if (root_ == nullptr) {
+    return Trie(nullptr);
+  }
+
+  auto new_root = root_->Clone();
+  std::stack<std::pair<char, std::unique_ptr<TrieNode>>> stack_vec;
+  stack_vec.push(std::make_pair('a', std::move(new_root)));
+
+  auto it_key = key.begin();
+  while (it_key != key.end()) {
+    // 遍历key 如果找到就把节点压进去
+    auto it_find = (stack_vec.top().second)->children_.find(*it_key);
+    if (it_find != (stack_vec.top().second)->children_.end()) {
+      auto slot = (stack_vec.top().second)->children_.at(*it_key)->Clone();
+      stack_vec.push(std::make_pair(*it_key, std::move(slot)));
+    
+    } else {
+      // 遍历key 如果遇到一个不存在的直接返回root
+      new_root = root_->Clone();
+      return Trie(std::shared_ptr<const TrieNode>(std::move(new_root)));
+    }
+    it_key++;
+  }
+  // 判断带不带value，非叶子节点如果不带value不会删
+  if ((stack_vec.top().second)->is_value_node_) {  // 不带value的非终端结点不可能删，终端结点都带VALUE
+    char char_key = stack_vec.top().first;
+    if (stack_vec.top().second->children_.empty()) {
+      stack_vec.pop();
+      stack_vec.top().second->children_.erase(char_key);
+      while (stack_vec.size() > 1) {  // 直到root或第一个带VALUE的非终端结点
+        if (stack_vec.top().second->children_.empty() && !(stack_vec.top().second->is_value_node_)) {
+          char_key = stack_vec.top().first;
+          stack_vec.pop();
+          stack_vec.top().second->children_.erase(char_key);
+        } else {
+          break;
+        }
+      }
+    } else {
+      auto slot = std::move(stack_vec.top().second);
+      stack_vec.pop();
+      stack_vec.top().second->children_.at(char_key) = std::make_unique<TrieNode>(TrieNode(slot->children_));
+    }
+  }
+  // 建新树
+  auto slot = std::move(stack_vec.top().second);
+  char key_char = stack_vec.top().first;
+  stack_vec.pop();
+  while (!stack_vec.empty()) {
+    stack_vec.top().second->children_.at(key_char) = std::move(slot);
+    key_char = stack_vec.top().first;
+    slot = std::move(stack_vec.top().second);
+    stack_vec.pop();
+  }
+  new_root = std::move(slot);
+  if (!new_root->is_value_node_ && new_root->children_.empty()) {
+    return Trie(nullptr);
+  }
+
+  return Trie(std::shared_ptr<const TrieNode>(std::move(new_root)));
 }
+
 
 // Below are explicit instantiation of template functions.
 //
