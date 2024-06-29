@@ -34,6 +34,24 @@ class LRUKNode {
   [[maybe_unused]] size_t k_;
   [[maybe_unused]] frame_id_t fid_;
   [[maybe_unused]] bool is_evictable_{false};
+
+ public:
+  explicit LRUKNode() = default;
+
+  auto history() const -> std::list<size_t> {return history_;}
+  auto history_entry() const -> size_t {return k_;}
+  auto entry_is() const -> size_t {return k_;}
+  auto evictable() const -> bool {return is_evictable_;}
+
+  void Access(size_t curr_stamp) {
+    history_.push_back(curr_stamp);
+    k_ ++;
+  }
+  
+  void verse_evictable(){
+    is_evictable_ = ! is_evictable_;
+  }
+
 };
 
 /**
