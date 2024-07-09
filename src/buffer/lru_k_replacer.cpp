@@ -62,7 +62,7 @@ auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
 void LRUKReplacer::RecordAccess(frame_id_t frame_id, [[maybe_unused]] AccessType access_type) {
     std::lock_guard<std::mutex> guard(latch_);
 
-    if (static_cast<size_t>(frame_id) > replacer_size_ || frame_id <= 0) {
+    if (static_cast<size_t>(frame_id) >= replacer_size_ || frame_id < 0) {
         BUSTUB_ASSERT("id {} :out of replacer_size_ range", frame_id);
     }
 
@@ -79,7 +79,7 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id, [[maybe_unused]] AccessType
 void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
     std::lock_guard<std::mutex> guard(latch_);
     
-    if (static_cast<size_t>(frame_id) > replacer_size_ || frame_id <= 0) {
+    if (static_cast<size_t>(frame_id) >= this->replacer_size_ || frame_id < 0) {
         BUSTUB_ASSERT("id {} :out of replacer_size_ range", frame_id);
     }
 

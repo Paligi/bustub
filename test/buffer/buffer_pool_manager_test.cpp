@@ -23,7 +23,7 @@ namespace bustub {
 
 // NOLINTNEXTLINE
 // Check whether pages containing terminal characters can be recovered
-TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
+TEST(BufferPoolManagerTest, BinaryDataTest) {
   const std::string db_name = "test.db";
   const size_t buffer_pool_size = 10;
   const size_t k = 5;
@@ -36,7 +36,7 @@ TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
   // No matter if `char` is signed or unsigned by default, this constraint must be met
   static_assert(upper_bound - lower_bound == 255);
   std::uniform_int_distribution<int> uniform_dist(lower_bound, upper_bound);
-
+  std::cout<< "HEllo" << std::endl;
   auto *disk_manager = new DiskManager(db_name);
   auto *bpm = new BufferPoolManager(buffer_pool_size, disk_manager, k);
 
@@ -52,7 +52,7 @@ TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
   for (char &i : random_binary_data) {
     i = static_cast<char>(uniform_dist(rng));
   }
-
+  std::cout<< "HEll11111" << std::endl;
   // Insert terminal characters both in the middle and at end
   random_binary_data[BUSTUB_PAGE_SIZE / 2] = '\0';
   random_binary_data[BUSTUB_PAGE_SIZE - 1] = '\0';
@@ -81,7 +81,7 @@ TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
     // Unpin the page here to allow future fetching
     bpm->UnpinPage(page_id_temp, false);
   }
-
+ 
   // Scenario: We should be able to fetch the data we wrote a while ago.
   page0 = bpm->FetchPage(0);
   ASSERT_NE(nullptr, page0);
@@ -97,7 +97,7 @@ TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferPoolManagerTest, DISABLED_SampleTest) {
+TEST(BufferPoolManagerTest, SampleTest) {
   const std::string db_name = "test.db";
   const size_t buffer_pool_size = 10;
   const size_t k = 5;
@@ -115,7 +115,7 @@ TEST(BufferPoolManagerTest, DISABLED_SampleTest) {
   // Scenario: Once we have a page, we should be able to read and write content.
   snprintf(page0->GetData(), BUSTUB_PAGE_SIZE, "Hello");
   EXPECT_EQ(0, strcmp(page0->GetData(), "Hello"));
-
+ 
   // Scenario: We should be able to create new pages until we fill up the buffer pool.
   for (size_t i = 1; i < buffer_pool_size; ++i) {
     EXPECT_NE(nullptr, bpm->NewPage(&page_id_temp));
